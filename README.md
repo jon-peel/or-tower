@@ -44,6 +44,20 @@ Included: `vatsim.svg` from the official [VATSIM logo pack](https://vats.im/logo
 version), and `VATSSA.png`, the roundel from VATSSA's own site
 ([VATSIM-SSA/ssa-homepage](https://github.com/VATSIM-SSA/ssa-homepage), `public/assets/favicon.png`).
 
+## Airline tails
+
+Each board row shows the airline's tail/emblem, keyed by the ICAO airline code in the
+callsign (`SAA335` → `SAA`; registrations like `ZSABC` get none). Images are looked up in:
+
+1. `assets/airlines/<CODE>.svg` or `.png` — your own, always wins
+2. `data/tails/` — cache of earlier downloads
+3. the community set [Jxck-S/airline-logos](https://github.com/Jxck-S/airline-logos)
+   (`flightaware_logos/`), fetched once per airline and cached; airlines without a logo
+   are re-checked weekly
+
+The community logos are airline trademarks collected from FlightAware; the repo carries no
+licence. They are downloaded on demand and never committed here.
+
 ## Data
 
 - Live feed: `data.vatsim.net/v3/vatsim-data.json` (cached 15 s)

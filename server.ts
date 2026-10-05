@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, normalize } from 'node:path';
 import { BadRequest, getOverlay } from './src/server/overlay.ts';
+import { getTail } from './src/server/tails.ts';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const ROOT = new URL('.', import.meta.url);
@@ -47,6 +48,14 @@ const server = createServer(async (req, res) => {
       console.error(err);
       return sendJson(res, 502, { error: 'VATSIM data unavailable' });
     }
+  }
+
+  const tail = /^\/api\/tail\/([A-Z0-9]{3})$/.exec(path);
+  if (tail) {
+    const img = await getTail(tail[1]);
+    if (!img) return res.writeHead(404, { 'cache-control': 'max-age=3600' }).end();
+    res.writeHead(200, { 'content-type': img.type, 'cache-control': 'max-age=86400' });
+    return res.end(img.body);
   }
 
   for (const [prefix, dir] of Object.entries(STATIC_DIRS)) {

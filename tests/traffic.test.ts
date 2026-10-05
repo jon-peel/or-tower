@@ -99,3 +99,17 @@ test('pilots without a flight plan are ignored', () => {
   const { departures, arrivals } = computeTraffic([p], [], FAOR);
   assert.equal(departures.length + arrivals.length, 0);
 });
+
+test('airline code from callsign; registrations have none', async () => {
+  const { airlineCode } = await import('../src/server/tails.ts');
+  assert.equal(airlineCode('SAA335'), 'SAA');
+  assert.equal(airlineCode('UAE37R'), 'UAE');
+  assert.equal(airlineCode('ZSABC'), undefined);
+  assert.equal(airlineCode('N123AB'), undefined);
+  assert.equal(airlineCode('GDEFG'), undefined);
+});
+
+test('flights carry the airline code', () => {
+  const { departures } = computeTraffic([pilot('SAA335', { groundspeed: 0 }), pilot('ZSABC', { groundspeed: 0 })], [], FAOR);
+  assert.deepEqual(departures.map((f) => f.airline), ['SAA', undefined]);
+});

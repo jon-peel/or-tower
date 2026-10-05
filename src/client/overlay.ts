@@ -60,14 +60,14 @@ function buildDom() {
     towerLogo: h('img.paint-logo', { alt: '' }),
     region: h('div.region', ''),
     wx: h('div.wx', ''),
-    dep: Array.from({ length: ROWS }, () => createFlapRow(COLUMNS)),
-    arr: Array.from({ length: ROWS }, () => createFlapRow(COLUMNS)),
+    dep: Array.from({ length: ROWS }, createBoardRow),
+    arr: Array.from({ length: ROWS }, createBoardRow),
     error: h('div.error', ''),
     sky: createSky(),
     bar: h('div.lt'),
   };
 
-  const column = (title: string, rows: FlapRow[]) =>
+  const column = (title: string, rows: BoardRow[]) =>
     h('section.board-col', {}, h('h2', title), ...rows.map((r) => r.el));
 
   ui.bar.append(
@@ -132,12 +132,40 @@ function render(ui: Ui, d: OverlayPayload, { category: catOverride, ...skyOverri
   renderClock(ui, d);
 }
 
-function fillBoard(rows: FlapRow[], flights: Flight[], status: (f: Flight) => [string, string]) {
+interface BoardRow {
+  el: HTMLElement;
+  flap: FlapRow;
+  tail: HTMLImageElement;
+}
+
+/** A board row: airline tail tile + split-flap cells. */
+function createBoardRow(): BoardRow {
+  const flap = createFlapRow(COLUMNS);
+  const tail = h('img', { alt: '' });
+  tail.onerror = () => tail.removeAttribute('src'); // no logo for this airline
+  return { el: h('div.board-row', {}, h('span.tail', {}, tail), flap.el), flap, tail };
+}
+
+/** Swap the tail image with a quick flip, only when the airline changes. */
+function setTail(row: BoardRow, airline: string | undefined) {
+  const key = airline ?? '';
+  if (row.tail.dataset.airline === key) return;
+  row.tail.dataset.airline = key;
+  const tile = row.tail.parentElement!;
+  tile.classList.remove('tick');
+  void tile.offsetWidth;
+  tile.classList.add('tick');
+  if (airline) row.tail.src = `/api/tail/${airline}`;
+  else row.tail.removeAttribute('src');
+}
+
+function fillBoard(rows: BoardRow[], flights: Flight[], status: (f: Flight) => [string, string]) {
   rows.forEach((row, i) => {
     const f = flights[i];
-    if (!f) return row.set([]);
+    setTail(row, f?.airline);
+    if (!f) return row.flap.set([]);
     const [text, tone] = status(f);
-    row.set([f.callsign, f.other, text], tone);
+    row.flap.set([f.callsign, f.other, text], tone);
   });
 }
 

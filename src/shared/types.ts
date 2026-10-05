@@ -5,6 +5,8 @@ export type ArrivalStatus = 'APPROACH' | 'ENROUTE' | 'LANDED';
 
 export interface Flight {
   callsign: string;
+  /** ICAO airline code from the callsign (SAA335 → SAA), for the tail logo. */
+  airline?: string;
   /** Destination ICAO for departures, origin ICAO for arrivals. */
   other: string;
   aircraft: string;

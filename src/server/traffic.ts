@@ -4,6 +4,7 @@
 import type { ArrivalStatus, DepartureStatus, Flight } from '../shared/types.ts';
 import type { Pilot, Prefile } from './feed.ts';
 import { distanceNm } from './geo.ts';
+import { airlineCode } from './tails.ts';
 
 const ON_GROUND_KT = 50; // below this we treat the aircraft as on the ground
 const STATIONARY_KT = 5;
@@ -69,8 +70,9 @@ export function computeTraffic(pilots: Pilot[], prefiles: Prefile[], apt: Airpor
       ARR_ORDER[a.status as ArrivalStatus] - ARR_ORDER[b.status as ArrivalStatus] || (a.etaMin ?? 0) - (b.etaMin ?? 0),
   );
 
+  const withAirline = (f: Flight): Flight => ({ ...f, airline: airlineCode(f.callsign) });
   return {
-    departures: departures.map(({ sortKey: _, ...f }) => f),
-    arrivals,
+    departures: departures.map(({ sortKey: _, ...f }) => withAirline(f)),
+    arrivals: arrivals.map(withAirline),
   };
 }
