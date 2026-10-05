@@ -1,0 +1,475 @@
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 500;
+  font-display: block;
+  src: url('/assets/barlow-condensed-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 700;
+  font-display: block;
+  src: url('/assets/barlow-condensed-700.woff2') format('woff2');
+}
+
+:root {
+  --navy-1: #123463;
+  --navy-2: #0a1f3f;
+  --navy-3: #061429;
+  --gold: #c9a54c;
+  --gold-soft: rgba(201, 165, 76, 0.45);
+  --text: #eef2f8;
+  --muted: #a3b6d1;
+  --live: #3ddc84;
+  --standby: #f2b134;
+  --flap-bg: #1a1a1a;
+  --flap-text: #f3efe2;
+  --font: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--font); color: var(--text); }
+html.is-overlay body { background: transparent; overflow: hidden; }
+html.is-overlay.is-preview body { background: #3a3f47 linear-gradient(135deg, #2b3038, #4a515c); }
+
+/* ---------- Overlay ----------
+   Designed at 1920×1080 (the OBS canvas): every rem value below is its design
+   pixel size ÷ 16. --overlay-scale shrinks/grows the whole overlay at 1080p
+   (1 → 1rem = 16px). Other window sizes scale from that base, limited by
+   whichever of width or height runs out first. */
+
+html.is-overlay {
+  --overlay-scale: 0.85;
+  font-size: min(
+    calc(100vw * 16 * var(--overlay-scale) / 1920),
+    calc(100vh * 16 * var(--overlay-scale) / 1080)
+  );
+}
+
+.lt {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12.25rem;
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(180deg, rgba(18, 52, 99, 0.96), rgba(6, 20, 41, 0.97));
+  border-top: 0.125rem solid var(--gold);
+  box-shadow: 0 -0.375rem 1.5rem rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: translateY(1.875rem);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lt.is-ready { opacity: 1; transform: none; }
+
+/* Left section: sky background, tower and info text. */
+.lt-left {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  padding: 1.125rem 2rem 1.125rem 21.875rem;
+}
+
+/* Tower rises out of the bar: base flush with the bar's bottom edge. */
+.tower {
+  position: absolute;
+  z-index: 2;
+  left: 1.625rem;
+  bottom: 0;
+  height: 32rem; /* 512px at 1080p (PNG is 390px tall, so upscaled ~1.3×) */
+  filter: drop-shadow(0 0.375rem 0.625rem rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+
+.lt-tab {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  padding: 0.375rem 1.125rem 0.3125rem;
+  background: var(--navy-2);
+  border: 0.125rem solid var(--gold);
+  border-bottom: 0;
+  border-radius: 0.375rem 0.375rem 0 0;
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tab-brand { font-weight: 700; color: var(--gold); }
+.tab-controller { color: var(--muted); }
+.tab-controller:empty { display: none; }
+.tab-clock { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- Info block ---------- */
+
+.lt-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 0.1875rem rgba(0, 0, 0, 0.75);
+}
+.lt-info > * { overflow: hidden; text-overflow: ellipsis; }
+
+.pos { display: flex; align-items: baseline; gap: 0.875rem; }
+.pos > * { flex-shrink: 0; }
+.pos > .pos-facility { flex-shrink: 1; min-width: 0; overflow: hidden; }
+.pos-callsign { font-size: 3.125rem; font-weight: 700; line-height: 1; letter-spacing: 0.02em; }
+.pos-facility { font-size: 1.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.pos-freq { font-size: 2.125rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+.pos-tag {
+  align-self: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy-3);
+  background: var(--standby);
+}
+.lt[data-status='live'] .pos-tag { background: var(--live); }
+.lt[data-status='live'] .pos-tag::before {
+  content: '';
+  display: inline-block;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  margin: 0 0.4375rem 0.125rem 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.lt[data-status='standby'] .pos-freq { color: var(--muted); }
+
+.apt { font-size: 1.875rem; font-weight: 500; }
+.apt-codes { margin-left: 0.75rem; color: var(--gold); font-weight: 700; letter-spacing: 0.06em; }
+.region { font-size: 1.3125rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.wx { display: flex; gap: 0.625rem; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.wx span { padding: 1px 0.5625rem; border: 1px solid var(--gold-soft); border-radius: 0.25rem; }
+.wx:empty { display: none; }
+.wx span { background: rgba(6, 20, 41, 0.45); }
+.wx .cat { border-color: transparent; color: var(--navy-3); text-shadow: none; }
+.cat-vfr { background: #3ddc84 !important; }
+.cat-mvfr { background: #4ea8ff !important; }
+.cat-ifr { background: #ff5a5a !important; }
+.cat-lifr { background: #d65cff !important; }
+
+@keyframes pulse { 50% { opacity: 0.25; } }
+
+/* ---------- Sky (behind the left section) ----------
+   State comes from data attributes on .sky: phase, cover, precip, fog. */
+
+.sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* fade into the bar before the board */
+  -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 70%, transparent 100%);
+}
+.sky > * { position: absolute; inset: 0; }
+
+.sky-grad { transition: background 3s ease, filter 3s ease; }
+.sky[data-phase='day'] .sky-grad { background: linear-gradient(180deg, #2f6fb5 0%, #6fb0e3 70%, #a9d4f2 100%); }
+.sky[data-phase='dawn'] .sky-grad { background: linear-gradient(180deg, #24376a 0%, #8a6a9a 55%, #f0a070 100%); }
+.sky[data-phase='dusk'] .sky-grad { background: linear-gradient(180deg, #1e2a5c 0%, #8c4f7a 55%, #e8794e 100%); }
+.sky[data-phase='night'] .sky-grad { background: linear-gradient(180deg, #030817 0%, #0b1838 70%, #142a55 100%); }
+.sky[data-cover='BKN'] .sky-grad { filter: saturate(0.65) brightness(0.9); }
+.sky[data-cover='OVC'] .sky-grad { filter: saturate(0.3) brightness(0.8); }
+.sky:is([data-precip='rain'], [data-precip='storm'], [data-cat='IFR'], [data-cat='LIFR']) .sky-grad { filter: saturate(0.3) brightness(0.6); }
+
+/* Stars: night only, hidden behind broken/overcast cloud. */
+.sky-stars {
+  opacity: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 30% 65%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 55% 30%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 70% 75%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 85% 15%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 42% 85%, #fff 50%, transparent 51%);
+  background-size: 9rem 6rem;
+  animation: twinkle 5s ease-in-out infinite alternate;
+  transition: opacity 3s ease;
+}
+.sky[data-phase='night'] .sky-stars { opacity: 0.9; }
+.sky[data-phase='night']:is([data-cover='BKN'], [data-cover='OVC']) .sky-stars { opacity: 0; }
+@keyframes twinkle { to { filter: brightness(0.6); } }
+
+/* Sun / moon: in the open space right of the text; low and orange at dawn/dusk. */
+.sky-sun {
+  inset: auto;
+  right: 22%;
+  top: 1.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  transition: all 3s ease;
+}
+.sky[data-phase='day'] .sky-sun { background: #fff8d8; box-shadow: 0 0 2rem 1rem rgba(255, 236, 160, 0.55); }
+.sky:is([data-phase='dawn'], [data-phase='dusk']) .sky-sun {
+  top: 7.5rem;
+  background: #ffcf7a;
+  box-shadow: 0 0 2.5rem 1.25rem rgba(255, 140, 60, 0.55);
+}
+.sky[data-phase='night'] .sky-sun {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: #e8ecf5;
+  box-shadow: inset -0.6rem -0.2rem 0 0 #b9c2d6, 0 0 1.5rem 0.25rem rgba(200, 215, 255, 0.3);
+}
+.sky[data-cover='SCT'] .sky-sun { opacity: 0.75; }
+.sky:is([data-cover='BKN'], [data-cover='OVC'], [data-cat='IFR'], [data-cat='LIFR']) .sky-sun,
+.sky:not([data-precip='none']) .sky-sun { opacity: 0; }
+
+/* Clouds: puffy blobs drifting left → right; how many show depends on cover. */
+.cloud {
+  position: absolute;
+  left: -12rem;
+  width: calc(10rem * var(--s, 1));
+  height: calc(3rem * var(--s, 1));
+  border-radius: 999px;
+  background: var(--cloud, rgba(255, 255, 255, 0.9));
+  filter: blur(0.25rem);
+  animation: drift linear infinite;
+}
+.cloud::before,
+.cloud::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.cloud::before { width: 45%; height: 140%; left: 15%; bottom: 30%; }
+.cloud::after { width: 35%; height: 110%; left: 50%; bottom: 35%; }
+@keyframes drift { from { left: -12rem; } to { left: 100%; } }
+
+.sky[data-cover='CLR'] .cloud,
+.sky[data-cover='FEW'] .cloud:nth-child(n + 4),
+.sky[data-cover='SCT'] .cloud:nth-child(n + 7),
+.sky[data-cover='BKN'] .cloud:nth-child(n + 11) { display: none; }
+
+/* Cloud deck: continuous textured layer behind the puffs, so BKN/OVC have no gaps.
+   Two tiled layers at different sizes and speeds for depth. */
+.sky-deck {
+  opacity: 0;
+  filter: blur(0.35rem);
+  transition: opacity 3s ease, transform 3s ease;
+}
+.sky-deck::before,
+.sky-deck::after {
+  content: '';
+  position: absolute;
+  inset: -20% 0;
+  background-image:
+    radial-gradient(ellipse 7rem 2.6rem at 15% 35%, var(--cloud) 45%, transparent 72%),
+    radial-gradient(ellipse 9rem 3rem at 50% 25%, var(--cloud) 45%, transparent 72%),
+    radial-gradient(ellipse 6rem 2.4rem at 80% 50%, var(--cloud) 45%, transparent 72%),
+    radial-gradient(ellipse 8rem 2.8rem at 35% 70%, var(--cloud) 45%, transparent 72%),
+    radial-gradient(ellipse 7rem 2.6rem at 70% 85%, var(--cloud) 45%, transparent 72%);
+  background-size: 26rem 100%;
+  animation: deck 140s linear infinite;
+}
+.sky-deck::after { background-size: 19rem 90%; opacity: 0.8; animation-duration: 95s; }
+@keyframes deck { to { background-position-x: 26rem; } }
+
+.sky[data-cover='SCT'] .sky-deck { opacity: 0.25; }
+.sky[data-cover='BKN'] .sky-deck { opacity: 0.7; }
+.sky[data-cover='OVC'] .sky-deck,
+.sky:is([data-precip='rain'], [data-precip='storm'], [data-precip='snow']) .sky-deck { opacity: 0.95; }
+
+/* Low ceiling: IFR/LIFR deck is denser and sits lower; puffs drop with it. */
+.sky:is([data-cat='IFR'], [data-cat='LIFR']) .sky-deck { opacity: 1; transform: translateY(20%) scaleY(1.3); }
+.sky:is([data-cat='IFR'], [data-cat='LIFR']) .sky-clouds { transform: translateY(25%); }
+
+/* Haze: poor visibility washes the sky out (MVFR light, IFR more, LIFR heavy). */
+.sky-haze {
+  opacity: 0;
+  background: linear-gradient(180deg, var(--haze) 0%, var(--haze) 100%);
+  transition: opacity 3s ease;
+  --haze: rgba(160, 168, 180, 1);
+}
+.sky[data-phase='night'] .sky-haze { --haze: rgba(40, 46, 60, 1); }
+.sky[data-cat='MVFR'] .sky-haze { opacity: 0.12; }
+.sky[data-cat='IFR'] .sky-haze { opacity: 0.3; }
+.sky[data-cat='LIFR'] .sky-haze { opacity: 0.5; }
+
+.sky[data-phase='day'] { --cloud: rgba(255, 255, 255, 0.88); }
+.sky:is([data-phase='dawn'], [data-phase='dusk']) { --cloud: rgba(255, 196, 170, 0.75); }
+.sky[data-phase='night'] { --cloud: rgba(70, 82, 110, 0.85); }
+.sky:is([data-cover='OVC'], [data-cat='IFR'], [data-cat='LIFR'], [data-precip='rain'], [data-precip='storm']) {
+  --cloud: rgba(120, 128, 142, 0.92);
+}
+.sky[data-phase='night']:is([data-cover='OVC'], [data-cat='IFR'], [data-cat='LIFR'], [data-precip='rain'], [data-precip='storm']) {
+  --cloud: rgba(45, 52, 70, 0.92);
+}
+
+/* Precipitation */
+.sky-precip { opacity: 0; }
+.sky:is([data-precip='rain'], [data-precip='storm']) .sky-precip {
+  opacity: 1;
+  background-image: repeating-linear-gradient(105deg, transparent 0 0.6rem, rgba(190, 210, 240, 0.35) 0.6rem 0.68rem);
+  background-size: 2rem 2rem;
+  animation: rain 0.45s linear infinite;
+}
+.sky[data-precip='snow'] .sky-precip {
+  opacity: 1;
+  background-image:
+    radial-gradient(0.15rem 0.15rem at 20% 30%, #fff 60%, transparent 61%),
+    radial-gradient(0.12rem 0.12rem at 70% 60%, #fff 60%, transparent 61%),
+    radial-gradient(0.18rem 0.18rem at 45% 85%, #fff 60%, transparent 61%);
+  background-size: 3rem 3rem;
+  animation: snow 6s linear infinite;
+}
+@keyframes rain { to { background-position: -0.55rem 2rem; } }
+@keyframes snow { to { background-position: 1rem 3rem; } }
+
+/* Lightning */
+.sky-flash { opacity: 0; background: #e8f0ff; }
+.sky[data-precip='storm'] .sky-flash { animation: flash 9s linear infinite; }
+@keyframes flash {
+  0%, 90%, 92%, 95%, 100% { opacity: 0; }
+  91% { opacity: 0.55; }
+  93.5% { opacity: 0.35; }
+}
+
+/* Fog / mist bands */
+.sky-fog { opacity: 0; transition: opacity 3s ease; }
+.sky[data-fog='true'] .sky-fog {
+  opacity: 1;
+  background:
+    linear-gradient(180deg, transparent 10%, rgba(220, 225, 232, 0.35) 40%, transparent 60%),
+    linear-gradient(180deg, transparent 50%, rgba(220, 225, 232, 0.5) 85%);
+  background-size: 200% 100%;
+  animation: fog 30s ease-in-out infinite alternate;
+}
+@keyframes fog { to { background-position: 100% 0; } }
+
+/* Readability scrim over the whole sky. */
+.sky-scrim { background: linear-gradient(90deg, rgba(6, 20, 41, 0.05) 0%, rgba(6, 20, 41, 0.3) 20%, rgba(6, 20, 41, 0.3) 60%, rgba(6, 20, 41, 0.1) 100%); }
+
+/* ---------- Split-flap board ---------- */
+
+.board {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.125rem 1.75rem;
+  border-left: 1px solid var(--gold-soft);
+}
+.board-col { display: flex; flex-direction: column; gap: 0.375rem; }
+.board-col h2 {
+  margin: 0 0 0.125rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.board-col h2::before { content: '✈'; display: inline-block; margin-right: 0.625rem; }
+.board-col:first-child h2::before { transform: rotate(-35deg); }
+.board-col:last-child h2::before { transform: rotate(35deg); }
+
+.flap-row { display: flex; gap: 0.5rem; }
+.flap-group { display: flex; gap: 0.125rem; }
+
+.flap {
+  position: relative;
+  width: 1.25rem;
+  height: 2.125rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.1875rem;
+  background: linear-gradient(180deg, #262626 0%, var(--flap-bg) 49%, #050505 49.5%, #050505 50.5%, #1d1d1d 51%, #121212 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 0.125rem rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.flap-char {
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--flap-text);
+}
+.flap.tick .flap-char { animation: flap 55ms linear; }
+@keyframes flap {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(0.15); filter: brightness(0.6); }
+  100% { transform: scaleY(1); }
+}
+
+/* Status-group tint per row tone (last group = status). */
+.flap-row[data-tone='go'] .flap-group:last-child .flap-char { color: var(--live); }
+.flap-row[data-tone='hold'] .flap-group:last-child .flap-char { color: #ffd65c; }
+.flap-row[data-tone='dim'] .flap-group:last-child .flap-char { color: #8f99a8; }
+
+.error {
+  position: fixed;
+  left: 3rem;
+  bottom: 18.75rem;
+  padding: 0.625rem 1rem;
+  background: #8b1e1e;
+  border-radius: 0.25rem;
+  font-size: 1.625rem;
+}
+.error:empty { display: none; }
+
+/* ---------- Setup form ---------- */
+
+body.is-setup {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 30% 20%, var(--navy-1), var(--navy-3));
+}
+.setup form {
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  background: var(--navy-2);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  font-size: 18px;
+}
+.setup h1 { margin: 0; font-size: 34px; letter-spacing: 0.04em; text-transform: uppercase; }
+.setup .hint { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.45; }
+.setup label { display: flex; flex-direction: column; gap: 6px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.setup input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gold-soft);
+  border-radius: 4px;
+  background: var(--navy-3);
+  color: var(--text);
+  font: 700 22px var(--font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.setup input.url { font: 14px ui-monospace, monospace; text-transform: none; letter-spacing: 0; }
+.setup input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.setup button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--gold);
+  color: var(--navy-3);
+  font: 700 20px var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.setup .result { display: flex; flex-direction: column; gap: 10px; }
+.setup .result[hidden] { display: none; }
+.setup .url-row { display: flex; gap: 8px; }
+.setup a { color: var(--gold); }

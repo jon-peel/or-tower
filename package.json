@@ -1,0 +1,20 @@
+{
+  "name": "or-tower",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/client/main.ts --bundle --minify --format=esm --outfile=dist/app.js --external:/assets/*",
+    "dev": "npm run build -- --watch=forever & node --watch server.ts",
+    "start": "npm run build && node server.ts",
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}
