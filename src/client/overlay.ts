@@ -51,12 +51,13 @@ function buildDom() {
   const ui = {
     clock: t('tab-clock'),
     controller: t('tab-controller'),
-    callsign: t('pos-callsign'),
     facility: t('pos-facility'),
     freq: t('pos-freq'),
     tag: t('pos-tag'),
     aptName: t('apt-name'),
     aptCodes: t('apt-codes'),
+    towerIcao: h('div.paint-icao', ''),
+    towerLogo: h('img.paint-logo', { alt: '' }),
     region: h('div.region', ''),
     wx: h('div.wx', ''),
     dep: Array.from({ length: ROWS }, () => createFlapRow(COLUMNS)),
@@ -75,12 +76,13 @@ function buildDom() {
       'div.lt-left',
       {},
       ui.sky.el,
-      h('img.tower', { src: '/assets/or-twr.png', alt: '' }),
+      // ICAO and logo are "painted" onto the tower's left and right walls.
+      h('div.tower', {}, h('img', { src: '/assets/or-twr.png', alt: '' }), ui.towerIcao, ui.towerLogo),
       h(
         'div.lt-info',
         {},
-        h('div.pos', {}, ui.callsign, ui.facility, ui.freq, ui.tag),
         h('div.apt', {}, ui.aptName, ui.aptCodes),
+        h('div.pos', {}, ui.facility, ui.freq, ui.tag),
         ui.region,
         ui.wx,
       ),
@@ -95,11 +97,12 @@ function render(ui: Ui, d: OverlayPayload, { category: catOverride, ...skyOverri
   ui.bar.dataset.status = d.status;
   ui.bar.classList.add('is-ready');
 
-  ui.callsign.textContent = p.callsign;
   ui.facility.textContent = p.facility;
   ui.freq.textContent = p.frequency ?? '---.---';
   ui.tag.textContent = d.status === 'live' ? 'Live' : 'Standby';
 
+  ui.towerIcao.textContent = a.icao;
+  setLogo(ui.towerLogo, a.division, a.region);
   ui.aptName.textContent = a.name;
   ui.aptCodes.textContent = [a.icao, a.iata].filter(Boolean).join(' / ');
   ui.region.textContent = [a.firName && `${a.firName} FIR`, a.country, a.division, a.region].filter(Boolean).join('  ·  ');
@@ -151,6 +154,28 @@ function arrivalStatus(f: Flight): [string, string] {
   if (f.status === 'LANDED') return ['LANDED', 'dim'];
   if (f.status === 'APPROACH') return ['APPROACH', 'go'];
   return [`ETA ${zulu(Date.now() + (f.etaMin ?? 0) * 60_000)}`, 'hold'];
+}
+
+/**
+ * Logo on the tower's wall, from assets/logos/: the controller's division (e.g. VATSSA.png),
+ * else their region (e.g. EMEA.svg), else the VATSIM logo, else hidden.
+ * Division/region logos are "painted" on (skewed + blended). The VATSIM logo is shown upright
+ * and unaltered (`.is-official`), as VATSIM's brand guidelines forbid distorting or recolouring it.
+ */
+function setLogo(img: HTMLImageElement, division: string | undefined, region: string | undefined) {
+  const key = `${division ?? ''}/${region ?? ''}`;
+  if (img.dataset.key === key) return;
+  img.dataset.key = key;
+  const names = [division, region, 'vatsim'].filter((n): n is string => !!n);
+  const candidates = names.flatMap((n) => [`${n}.svg`, `${n}.png`]);
+  const tryNext = () => {
+    const next = candidates.shift();
+    if (!next) return img.removeAttribute('src');
+    img.classList.toggle('is-official', next.startsWith('vatsim.'));
+    img.src = `/assets/logos/${next}`;
+  };
+  img.onerror = tryNext;
+  tryNext();
 }
 
 /** Epoch ms → "1435Z". */

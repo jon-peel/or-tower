@@ -26,6 +26,24 @@ Open http://localhost:3000/ for the setup form, or go straight to
 
 In OBS: **Sources → + → Browser**, paste the URL, width 1920, height 1080.
 
+## Logo
+
+The ICAO code is painted on the tower's right wall; a logo goes on the left wall. The logo is
+picked from `assets/logos/` (SVG or PNG, transparent background, roughly square to 3:2):
+
+1. the controller's division, named by the code shown in the lower third, e.g. `VATSSA.png`
+2. their region, e.g. `EMEA.svg`
+3. `vatsim.svg` — the official VATSIM logo
+4. otherwise no logo
+
+Division/region logos are "painted" on (skewed to the wall and blended into it). The VATSIM
+logo is shown upright and unaltered, because the [VATSIM brand guidelines](https://cdn.vatsim.net/VATSIM_Brand_Guidelines_v2.pdf)
+forbid distorting or recolouring it.
+
+Included: `vatsim.svg` from the official [VATSIM logo pack](https://vats.im/logo) (no-tagline
+version), and `VATSSA.png`, the roundel from VATSSA's own site
+([VATSIM-SSA/ssa-homepage](https://github.com/VATSIM-SSA/ssa-homepage), `public/assets/favicon.png`).
+
 ## Data
 
 - Live feed: `data.vatsim.net/v3/vatsim-data.json` (cached 15 s)
