@@ -1,7 +1,8 @@
 import type { Flight, FlightCategory, OverlayPayload } from '../shared/types.ts';
 import { h } from './dom.ts';
 import { createSky, type SkyState } from './sky.ts';
-import { createFlapRow, type FlapRow } from './splitflap.ts';
+import { createClacker } from './sound.ts';
+import { createFlapRow, setFlapSound, type FlapRow } from './splitflap.ts';
 
 const POLL_MS = 15_000;
 const STALE_POLL_MS = 60_000; // server unreachable this long → "data delayed"
@@ -20,6 +21,7 @@ export function startOverlay(root: HTMLElement, q: URLSearchParams) {
 
   const ui = buildDom();
   root.append(ui.error, ui.bar);
+  if (q.get('sound') === '1') enableSound(root, ui, Number(q.get('volume') ?? 0.4));
 
   let data: OverlayPayload | undefined;
   let lastOkAt = Date.now();
@@ -224,6 +226,35 @@ function setLogo(img: HTMLImageElement, division: string | undefined, region: st
 /** Epoch ms → "1435Z". */
 function zulu(ms: number): string {
   return `${new Date(ms).toISOString().slice(11, 16).replace(':', '')}Z`;
+}
+
+/**
+ * Flap sound. OBS plays audio straight away; a normal browser tab blocks it until the page is
+ * clicked, so there we show a hint, and the click unlocks audio and replays the board.
+ */
+function enableSound(root: HTMLElement, ui: Ui, volume: number) {
+  const clacker = createClacker(Math.min(1, Math.max(0, volume || 0.4)));
+  setFlapSound(clacker.click);
+
+  // Audio can take a moment to start even when allowed, so only ask for a click if it is
+  // still blocked after a short wait, and drop the hint as soon as audio runs.
+  const hint = h('button.sound-hint', { type: 'button' }, '🔈 Click to enable flap sound');
+  clacker.onChange(() => {
+    if (clacker.running()) hint.remove();
+  });
+  setTimeout(() => {
+    if (!clacker.running()) root.append(hint);
+  }, 1500);
+  addEventListener(
+    'pointerdown',
+    async () => {
+      if (clacker.running()) return;
+      await clacker.resume();
+      hint.remove();
+      for (const row of [...ui.dep, ...ui.arr]) row.flap.replay();
+    },
+    { once: true },
+  );
 }
 
 /** "RWY 03L/03R" when arrivals and departures share runways, else "ARR 03R · DEP 03L". */

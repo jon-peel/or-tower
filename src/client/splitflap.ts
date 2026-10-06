@@ -7,6 +7,13 @@ const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-.:';
 const STEP_MS = 55;
 const STAGGER_MS = 28;
 
+let onFlap: (() => void) | undefined;
+
+/** Called on every flap movement (e.g. to play a clack). */
+export function setFlapSound(fn: () => void) {
+  onFlap = fn;
+}
+
 interface Cell {
   el: HTMLElement;
   char: string;
@@ -17,21 +24,29 @@ export interface FlapRow {
   el: HTMLElement;
   /** One string per group; padded/truncated to the group width. */
   set(values: string[], tone?: string): void;
+  /** Flip the current text in again from blank. */
+  replay(): void;
 }
 
 export function createFlapRow(widths: number[]): FlapRow {
   const groups = widths.map((w) => Array.from({ length: w }, () => makeCell()));
   const el = h('div.flap-row', {}, ...groups.map((cells) => h('span.flap-group', {}, ...cells.map((c) => c.el))));
 
+  let last: string[] = [];
   return {
     el,
     set(values, tone = '') {
+      last = values;
       el.dataset.tone = tone;
       let i = 0;
       groups.forEach((cells, g) => {
         const text = (values[g] ?? '').toUpperCase().padEnd(cells.length).slice(0, cells.length);
         cells.forEach((cell, c) => flipTo(cell, text[c], i++ * STAGGER_MS));
       });
+    },
+    replay() {
+      for (const cell of groups.flat()) cell.char = ' ';
+      this.set(last, el.dataset.tone);
     },
   };
 }
@@ -59,6 +74,7 @@ function flipTo(cell: Cell, target: string, delay: number) {
     cell.el.classList.remove('tick');
     void cell.el.offsetWidth; // restart the CSS animation
     cell.el.classList.add('tick');
+    onFlap?.();
     if (n-- > 0) setTimeout(tick, STEP_MS);
   };
   setTimeout(tick, delay);

@@ -22,6 +22,7 @@ Open http://localhost:3000/ for the setup form, or go straight to
 | `callsign`  | Position callsign (required). Airport is taken from its prefix. |
 | `airport`   | ICAO override when the prefix isn't the airport.                |
 | `preview`   | Grey backdrop for checking the layout in a normal browser.      |
+| `sound`, `volume` | `&sound=1` plays a split-flap clack when the board changes (`&volume=0.4` default, 0–1). In OBS tick **Control audio via OBS** on the Browser Source to send it to the stream mixer. A normal browser tab blocks sound until you click the page, so it shows a "Click to enable flap sound" button; clicking replays the board so you hear it. |
 | `sky`, `cover`, `precip`, `fog`, `cat` | Preview the weather background: e.g. `&sky=night&cover=OVC&precip=storm&fog=1&cat=IFR`. Values: `sky` dawn/day/dusk/night, `cover` CLR/FEW/SCT/BKN/OVC, `precip` none/rain/snow/storm, `cat` VFR/MVFR/IFR/LIFR. |
 
 In OBS: **Sources → + → Browser**, paste the URL, width 1920, height 1080.
