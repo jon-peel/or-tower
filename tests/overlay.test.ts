@@ -103,3 +103,18 @@ test('buildOverlay: live position with ATIS code', () => {
 test('buildOverlay rejects unknown airports', () => {
   assert.throws(() => buildOverlay({ callsign: 'ZZZZ_TWR', icao: 'ZZZZ' }, feed(), spy, undefined), /Unknown airport/);
 });
+
+test('eventFor: live event first, else next within 6 hours', async () => {
+  const { eventFor } = await import('../src/server/events.ts');
+  const now = Date.parse('2026-10-05T16:00:00Z');
+  const ev = (name: string, start: string, end: string, icao = 'FAOR') => ({
+    name, start_time: `2026-10-05T${start}:00Z`, end_time: `2026-10-05T${end}:00Z`, airports: [{ icao }],
+  });
+  assert.equal(eventFor([ev('Later', '18:00', '20:00'), ev('Now', '15:00', '17:00')], 'FAOR', now)?.name, 'Now');
+  assert.deepEqual(eventFor([ev('Later', '18:00', '20:00')], 'FAOR', now), {
+    name: 'Later', start: '2026-10-05T18:00:00Z', end: '2026-10-05T20:00:00Z', live: false,
+  });
+  assert.equal(eventFor([ev('Too late', '23:00', '23:59')], 'FAOR', now), undefined);
+  assert.equal(eventFor([ev('Over', '10:00', '12:00')], 'FAOR', now), undefined);
+  assert.equal(eventFor([ev('Elsewhere', '15:00', '17:00', 'FACT')], 'FAOR', now), undefined);
+});

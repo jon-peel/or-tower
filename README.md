@@ -64,6 +64,9 @@ licence. They are downloaded on demand and never committed here.
 - Airports / FIRs / countries: VATSpy data project (cached in `data/`, refreshed weekly)
 - METAR: `metar.vatsim.net` (cached 5 min)
 - Division: best-effort ICAO prefix table in `src/server/divisions.ts`
+- Runway in use: best-effort parse of the ATIS text (`src/server/runways.ts`); split arrival/departure ATIS supported
+- Events: `my.vatsim.net/api/v2/events/latest` (cached 10 min) — a tab above the bar shows an event at the airport that is live, or starting within 6 hours
+- If the server or VATSIM feed stops updating for a minute or two, the clock tab shows **DATA DELAYED**
 - Sky: day/dawn/dusk/night from the sun's elevation at the airport (`src/server/sun.ts`); clouds, rain/snow/storm, fog and VFR/IFR category from the METAR (`src/server/metar.ts`)
 
 VATSIM has no schedules, so board status and arrival ETAs are inferred from

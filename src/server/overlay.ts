@@ -3,7 +3,9 @@
 import type { MetarInfo, OverlayPayload } from '../shared/types.ts';
 import { divisionFor, IATA_OVERRIDES } from './divisions.ts';
 import { getFeed, type VatsimFeed } from './feed.ts';
+import { eventFor, getEvents, type VatsimEvent } from './events.ts';
 import { getMetar } from './metar.ts';
+import { runwaysInUse } from './runways.ts';
 import { skyPhase } from './sun.ts';
 import { computeTraffic } from './traffic.ts';
 import { countryFor, getVatspy, type VatspyData } from './vatspy.ts';
@@ -26,6 +28,7 @@ export function buildOverlay(
   feed: VatsimFeed,
   spy: VatspyData,
   metar: MetarInfo | undefined,
+  events: VatsimEvent[] = [],
   now = new Date(),
 ): OverlayPayload {
   const apt = spy.airports.get(pos.icao);
@@ -36,7 +39,8 @@ export function buildOverlay(
   const facility = ctl
     ? feed.facilities.find((f) => f.id === ctl.facility)?.long
     : feed.facilities.find((f) => f.short === facilityShort)?.long;
-  const atis = feed.atis.find((a) => a.callsign.startsWith(`${pos.icao}_`) && a.atis_code);
+  const atisList = feed.atis.filter((a) => a.callsign.startsWith(`${pos.icao}_`));
+  const atis = atisList.find((a) => a.atis_code);
   const div = divisionFor(pos.icao);
   const { departures, arrivals } = computeTraffic(feed.pilots, feed.prefiles, apt);
 
@@ -61,6 +65,8 @@ export function buildOverlay(
       region: div?.region,
     },
     atis: atis?.atis_code ? { code: atis.atis_code } : undefined,
+    runways: runwaysInUse(atisList),
+    event: eventFor(events, apt.icao, now.getTime()),
     metar,
     departures: departures.slice(0, BOARD_ROWS),
     arrivals: arrivals.slice(0, BOARD_ROWS),
@@ -70,6 +76,6 @@ export function buildOverlay(
 
 export async function getOverlay(callsign: string | null, airport: string | null): Promise<OverlayPayload> {
   const pos = parsePosition(callsign, airport);
-  const [feed, spy, metar] = await Promise.all([getFeed(), getVatspy(), getMetar(pos.icao)]);
-  return buildOverlay(pos, feed, spy, metar);
+  const [feed, spy, metar, events] = await Promise.all([getFeed(), getVatspy(), getMetar(pos.icao), getEvents()]);
+  return buildOverlay(pos, feed, spy, metar, events);
 }

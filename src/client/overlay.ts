@@ -4,6 +4,8 @@ import { createSky, type SkyState } from './sky.ts';
 import { createFlapRow, type FlapRow } from './splitflap.ts';
 
 const POLL_MS = 15_000;
+const STALE_POLL_MS = 60_000; // server unreachable this long → "data delayed"
+const STALE_FEED_MS = 120_000; // VATSIM feed timestamp older than this → "data delayed"
 const ROWS = 3;
 const COLUMNS = [8, 4, 9]; // callsign, other airport, status (fits "ETA 1435Z")
 
@@ -20,6 +22,7 @@ export function startOverlay(root: HTMLElement, q: URLSearchParams) {
   root.append(ui.error, ui.bar);
 
   let data: OverlayPayload | undefined;
+  let lastOkAt = Date.now();
   const params = new URLSearchParams({ callsign, ...(airport ? { airport } : {}) });
 
   async function poll() {
@@ -32,6 +35,7 @@ export function startOverlay(root: HTMLElement, q: URLSearchParams) {
       }
       if (!res.ok) throw new Error(body.error);
       data = body as OverlayPayload;
+      lastOkAt = Date.now();
       ui.error.textContent = '';
       render(ui, data, skyOverride);
     } catch (err) {
@@ -41,7 +45,12 @@ export function startOverlay(root: HTMLElement, q: URLSearchParams) {
   }
 
   poll();
-  setInterval(() => renderClock(ui, data), 1000);
+  setInterval(() => {
+    renderClock(ui, data);
+    const now = Date.now();
+    const feedAge = data ? now - Date.parse(data.updatedAt) : 0;
+    ui.stale.hidden = !data || (now - lastOkAt < STALE_POLL_MS && feedAge < STALE_FEED_MS);
+  }, 1000);
 }
 
 type Ui = ReturnType<typeof buildDom>;
@@ -64,6 +73,8 @@ function buildDom() {
     arr: Array.from({ length: ROWS }, createBoardRow),
     error: h('div.error', ''),
     sky: createSky(),
+    stale: Object.assign(h('span.tab-stale', 'Data delayed'), { hidden: true }),
+    event: Object.assign(h('div.lt-event'), { hidden: true }),
     bar: h('div.lt'),
   };
 
@@ -71,7 +82,8 @@ function buildDom() {
     h('section.board-col', {}, h('h2', title), ...rows.map((r) => r.el));
 
   ui.bar.append(
-    h('div.lt-tab', {}, h('span.tab-brand', 'VATSIM'), ui.controller, ui.clock),
+    h('div.lt-tab', {}, ui.stale, h('span.tab-brand', 'VATSIM'), ui.controller, ui.clock),
+    ui.event,
     h(
       'div.lt-left',
       {},
@@ -110,6 +122,7 @@ function render(ui: Ui, d: OverlayPayload, { category: catOverride, ...skyOverri
   const category = catOverride ?? d.metar?.category;
   const wx = [
     d.atis && `ATIS ${d.atis.code}`,
+    d.runways && formatRunways(d.runways),
     d.metar?.wind && `Wind ${d.metar.wind}`,
     d.metar?.qnh,
   ].filter((s): s is string => !!s);
@@ -126,6 +139,8 @@ function render(ui: Ui, d: OverlayPayload, { category: catOverride, ...skyOverri
     category,
     ...skyOverride,
   });
+
+  renderEvent(ui.event, d.event);
 
   fillBoard(ui.dep, d.departures, departureStatus);
   fillBoard(ui.arr, d.arrivals, arrivalStatus);
@@ -209,6 +224,25 @@ function setLogo(img: HTMLImageElement, division: string | undefined, region: st
 /** Epoch ms → "1435Z". */
 function zulu(ms: number): string {
   return `${new Date(ms).toISOString().slice(11, 16).replace(':', '')}Z`;
+}
+
+/** "RWY 03L/03R" when arrivals and departures share runways, else "ARR 03R · DEP 03L". */
+function formatRunways({ arr, dep }: { arr: string[]; dep: string[] }): string {
+  if (arr.join() === dep.join()) return `RWY ${arr.join('/')}`;
+  return [arr.length && `ARR ${arr.join('/')}`, dep.length && `DEP ${dep.join('/')}`].filter(Boolean).join(' · ');
+}
+
+/** Event tab above the bar: "EVENT LIVE · name · until 1800Z" or "EVENT 1600–1900Z · name". */
+function renderEvent(el: HTMLElement, ev: OverlayPayload['event']) {
+  el.hidden = !ev;
+  if (!ev) return;
+  const hhmm = (iso: string) => zulu(Date.parse(iso));
+  el.classList.toggle('is-live', ev.live);
+  el.replaceChildren(
+    h('span.event-label', ev.live ? 'Event live' : `Event ${hhmm(ev.start)}–${hhmm(ev.end)}`),
+    h('span.event-name', ev.name),
+    ...(ev.live ? [h('span.event-time', `until ${hhmm(ev.end)}`)] : []),
+  );
 }
 
 function renderClock(ui: Ui, d: OverlayPayload | undefined) {

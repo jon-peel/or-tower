@@ -45,6 +45,9 @@ export function createSky() {
     h('div.sky-scrim'),
   );
 
+  // Clouds drift with transform (cheap to animate) across the sky's actual width.
+  new ResizeObserver(([entry]) => el.style.setProperty('--sky-w', `${entry.contentRect.width}px`)).observe(el);
+
   return {
     el,
     set(s: SkyState) {

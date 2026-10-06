@@ -49,12 +49,22 @@ export interface MetarInfo {
   fog: boolean;
 }
 
+export interface EventInfo {
+  name: string;
+  start: string;
+  end: string;
+  live: boolean;
+}
+
 export interface OverlayPayload {
   status: 'live' | 'standby';
   position: PositionInfo;
   airport: AirportInfo;
   sky: SkyPhase;
   atis?: { code: string };
+  /** Best-effort from the ATIS text. */
+  runways?: { arr: string[]; dep: string[] };
+  event?: EventInfo;
   metar?: MetarInfo;
   departures: Flight[];
   arrivals: Flight[];

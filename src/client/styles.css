@@ -143,6 +143,54 @@ html.is-overlay {
 .tab-controller { color: var(--muted); }
 .tab-controller:empty { display: none; }
 .tab-clock { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tab-stale {
+  padding: 0 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--standby);
+  color: var(--navy-3);
+  font-weight: 700;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.tab-stale[hidden] { display: none; }
+
+/* Event tab: above the bar, aligned with the info text. */
+.lt-event {
+  position: absolute;
+  left: 21.875rem;
+  bottom: 100%;
+  max-width: 48rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.375rem 1.125rem 0.3125rem;
+  background: var(--navy-2);
+  border: 0.125rem solid var(--gold);
+  border-bottom: 0;
+  border-radius: 0.375rem 0.375rem 0 0;
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.lt-event[hidden] { display: none; }
+.event-label { font-weight: 700; color: var(--gold); }
+.lt-event.is-live { background: var(--gold); }
+.lt-event.is-live .event-label,
+.lt-event.is-live .event-name,
+.lt-event.is-live .event-time { color: var(--navy-3); }
+.lt-event.is-live .event-label::before {
+  content: '';
+  display: inline-block;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  margin: 0 0.4375rem 0.125rem 0;
+  border-radius: 50%;
+  background: #c62828;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.event-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.event-time { color: var(--muted); }
 
 /* ---------- Info block ---------- */
 
@@ -226,8 +274,11 @@ html.is-overlay {
 .sky:is([data-precip='rain'], [data-precip='storm'], [data-cat='IFR'], [data-cat='LIFR']) .sky-grad { filter: saturate(0.3) brightness(0.6); }
 
 /* Stars: night only, hidden behind broken/overcast cloud. */
-.sky-stars {
-  opacity: 0;
+.sky-stars { opacity: 0; transition: opacity 3s ease; }
+.sky-stars::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background-image:
     radial-gradient(1px 1px at 10% 20%, #fff 50%, transparent 51%),
     radial-gradient(1px 1px at 30% 65%, #fff 50%, transparent 51%),
@@ -237,11 +288,10 @@ html.is-overlay {
     radial-gradient(1.5px 1.5px at 42% 85%, #fff 50%, transparent 51%);
   background-size: 9rem 6rem;
   animation: twinkle 5s ease-in-out infinite alternate;
-  transition: opacity 3s ease;
 }
 .sky[data-phase='night'] .sky-stars { opacity: 0.9; }
 .sky[data-phase='night']:is([data-cover='BKN'], [data-cover='OVC']) .sky-stars { opacity: 0; }
-@keyframes twinkle { to { filter: brightness(0.6); } }
+@keyframes twinkle { to { opacity: 0.55; } }
 
 /* Sun / moon: in the open space right of the text; low and orange at dawn/dusk. */
 .sky-sun {
@@ -279,6 +329,7 @@ html.is-overlay {
   background: var(--cloud, rgba(255, 255, 255, 0.9));
   filter: blur(0.25rem);
   animation: drift linear infinite;
+  will-change: transform;
 }
 .cloud::before,
 .cloud::after {
@@ -289,7 +340,7 @@ html.is-overlay {
 }
 .cloud::before { width: 45%; height: 140%; left: 15%; bottom: 30%; }
 .cloud::after { width: 35%; height: 110%; left: 50%; bottom: 35%; }
-@keyframes drift { from { left: -12rem; } to { left: 100%; } }
+@keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(var(--sky-w, 1200px) + 12rem)); } }
 
 .sky[data-cover='CLR'] .cloud,
 .sky[data-cover='FEW'] .cloud:nth-child(n + 4),
@@ -307,18 +358,23 @@ html.is-overlay {
 .sky-deck::after {
   content: '';
   position: absolute;
-  inset: -20% 0;
+  top: -20%;
+  bottom: -20%;
+  left: calc(-1 * var(--tile));
+  right: 0;
   background-image:
     radial-gradient(ellipse 7rem 2.6rem at 15% 35%, var(--cloud) 45%, transparent 72%),
     radial-gradient(ellipse 9rem 3rem at 50% 25%, var(--cloud) 45%, transparent 72%),
     radial-gradient(ellipse 6rem 2.4rem at 80% 50%, var(--cloud) 45%, transparent 72%),
     radial-gradient(ellipse 8rem 2.8rem at 35% 70%, var(--cloud) 45%, transparent 72%),
     radial-gradient(ellipse 7rem 2.6rem at 70% 85%, var(--cloud) 45%, transparent 72%);
-  background-size: 26rem 100%;
+  --tile: 26rem;
+  background-size: var(--tile) 100%;
   animation: deck 140s linear infinite;
+  will-change: transform;
 }
-.sky-deck::after { background-size: 19rem 90%; opacity: 0.8; animation-duration: 95s; }
-@keyframes deck { to { background-position-x: 26rem; } }
+.sky-deck::after { --tile: 19rem; background-size: var(--tile) 90%; opacity: 0.8; animation-duration: 95s; }
+@keyframes deck { to { transform: translateX(var(--tile)); } }
 
 .sky[data-cover='SCT'] .sky-deck { opacity: 0.25; }
 .sky[data-cover='BKN'] .sky-deck { opacity: 0.7; }
@@ -353,23 +409,29 @@ html.is-overlay {
 
 /* Precipitation */
 .sky-precip { opacity: 0; }
-.sky:is([data-precip='rain'], [data-precip='storm']) .sky-precip {
-  opacity: 1;
+.sky:not([data-precip='none']) .sky-precip { opacity: 1; }
+.sky-precip::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--tile, 2rem)) 0 0;
+  will-change: transform;
+}
+.sky:is([data-precip='rain'], [data-precip='storm']) .sky-precip::before {
+  --tile: 2rem;
   background-image: repeating-linear-gradient(105deg, transparent 0 0.6rem, rgba(190, 210, 240, 0.35) 0.6rem 0.68rem);
   background-size: 2rem 2rem;
-  animation: rain 0.45s linear infinite;
+  animation: fall 0.45s linear infinite;
 }
-.sky[data-precip='snow'] .sky-precip {
-  opacity: 1;
+.sky[data-precip='snow'] .sky-precip::before {
+  --tile: 3rem;
   background-image:
     radial-gradient(0.15rem 0.15rem at 20% 30%, #fff 60%, transparent 61%),
     radial-gradient(0.12rem 0.12rem at 70% 60%, #fff 60%, transparent 61%),
     radial-gradient(0.18rem 0.18rem at 45% 85%, #fff 60%, transparent 61%);
   background-size: 3rem 3rem;
-  animation: snow 6s linear infinite;
+  animation: fall 6s linear infinite;
 }
-@keyframes rain { to { background-position: -0.55rem 2rem; } }
-@keyframes snow { to { background-position: 1rem 3rem; } }
+@keyframes fall { to { transform: translateY(var(--tile)); } }
 
 /* Lightning */
 .sky-flash { opacity: 0; background: #e8f0ff; }
@@ -381,16 +443,16 @@ html.is-overlay {
 }
 
 /* Fog / mist bands */
-.sky-fog { opacity: 0; transition: opacity 3s ease; }
+.sky-fog { inset: -15% 0; opacity: 0; transition: opacity 3s ease; }
 .sky[data-fog='true'] .sky-fog {
   opacity: 1;
   background:
     linear-gradient(180deg, transparent 10%, rgba(220, 225, 232, 0.35) 40%, transparent 60%),
     linear-gradient(180deg, transparent 50%, rgba(220, 225, 232, 0.5) 85%);
-  background-size: 200% 100%;
-  animation: fog 30s ease-in-out infinite alternate;
+  animation: fog 20s ease-in-out infinite alternate;
+  will-change: transform;
 }
-@keyframes fog { to { background-position: 100% 0; } }
+@keyframes fog { to { transform: translateY(10%); } }
 
 /* Readability scrim over the whole sky. */
 .sky-scrim { background: linear-gradient(90deg, rgba(6, 20, 41, 0.05) 0%, rgba(6, 20, 41, 0.3) 20%, rgba(6, 20, 41, 0.3) 60%, rgba(6, 20, 41, 0.1) 100%); }

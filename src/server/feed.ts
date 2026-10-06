@@ -36,6 +36,7 @@ export interface Controller {
 
 export interface Atis extends Controller {
   atis_code: string | null;
+  text_atis?: string[] | null;
 }
 
 export interface VatsimFeed {
