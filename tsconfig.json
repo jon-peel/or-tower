@@ -12,5 +12,5 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["server.ts", "src", "tests"]
+  "include": ["server.ts", "src", "tests", "netlify"]
 }

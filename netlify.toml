@@ -1,0 +1,10 @@
+# Netlify: static overlay page + two functions (netlify/functions). Builds on every push to main.
+[build]
+  command = "npm run build:site"
+  publish = "site"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[functions]
+  node_bundler = "esbuild"

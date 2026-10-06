@@ -2,9 +2,10 @@
 // Downloaded once and cached in data/; refreshed weekly.
 
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { DATA_DIR } from './cache-dir.ts';
 
 const VATSPY_URL = 'https://raw.githubusercontent.com/vatsimnetwork/vatspy-data-project/master/VATSpy.dat';
-const CACHE_FILE = new URL('../../data/VATSpy.dat', import.meta.url);
+const CACHE_FILE = new URL('VATSpy.dat', DATA_DIR);
 const MAX_AGE_MS = 7 * 24 * 3600_000;
 
 export interface Airport {
@@ -80,8 +81,10 @@ async function load(): Promise<VatspyData> {
       const res = await fetch(VATSPY_URL, { signal: AbortSignal.timeout(20_000) });
       if (!res.ok) throw new Error(`VATSpy HTTP ${res.status}`);
       const text = await res.text();
-      await mkdir(new URL('.', CACHE_FILE), { recursive: true });
-      await writeFile(CACHE_FILE, text);
+      // Caching is best-effort: a read-only disk shouldn't stop the overlay working.
+      await mkdir(new URL('.', CACHE_FILE), { recursive: true })
+        .then(() => writeFile(CACHE_FILE, text))
+        .catch((err) => console.warn('VATSpy cache write failed:', err));
       return parseVatspy(text);
     } catch (err) {
       if (age === Infinity) throw err;

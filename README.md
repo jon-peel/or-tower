@@ -45,6 +45,18 @@ Included: `vatsim.svg` from the official [VATSIM logo pack](https://vats.im/logo
 version), and `VATSSA.png`, the roundel from VATSSA's own site
 ([VATSIM-SSA/ssa-homepage](https://github.com/VATSIM-SSA/ssa-homepage), `public/assets/favicon.png`).
 
+## Hosted (Netlify)
+
+Live at **https://twr.jonathanpeel.co.za** — use e.g.
+`https://twr.jonathanpeel.co.za/?callsign=FAOR_TWR&sound=1` as the OBS Browser Source, no local
+server needed. Every push to `main` builds and deploys automatically.
+
+- `netlify.toml`: build command `npm run build:site` (bundles the client and assembles `site/`)
+- `netlify/functions/overlay.mts` → `/api/overlay`, `netlify/functions/tail.mts` → `/api/tail/:code`
+  (thin wrappers around the same `src/server` code the local server uses)
+- Netlify's edge caches overlay data ~10 s per position and airline logos for a week
+- Try the Netlify build locally: `npx netlify-cli build --offline && npx netlify-cli serve`
+
 ## Airline tails
 
 Each board row shows the airline's tail/emblem, keyed by the ICAO airline code in the
