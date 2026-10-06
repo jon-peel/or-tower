@@ -30,7 +30,6 @@
 html, body { margin: 0; }
 body { font-family: var(--font); color: var(--text); }
 html.is-overlay body { background: transparent; overflow: hidden; }
-html.is-overlay.is-preview body { background: #3a3f47 linear-gradient(135deg, #2b3038, #4a515c); }
 
 /* ---------- Overlay ----------
    Designed at 1920×1080 (the OBS canvas): every rem value below is its design

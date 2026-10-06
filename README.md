@@ -21,11 +21,16 @@ Open http://localhost:3000/ for the setup form, or go straight to
 |-------------|----------------------------------------------------------------|
 | `callsign`  | Position callsign (required). Airport is taken from its prefix. |
 | `airport`   | ICAO override when the prefix isn't the airport.                |
-| `preview`   | Grey backdrop for checking the layout in a normal browser.      |
-| `sound`, `volume` | `&sound=1` plays a split-flap clack when the board changes (`&volume=0.4` default, 0–1). In OBS tick **Control audio via OBS** on the Browser Source to send it to the stream mixer. A normal browser tab blocks sound until you click the page, so it shows a "Click to enable flap sound" button; clicking replays the board so you hear it. |
 | `sky`, `cover`, `precip`, `fog`, `cat` | Preview the weather background: e.g. `&sky=night&cover=OVC&precip=storm&fog=1&cat=IFR`. Values: `sky` dawn/day/dusk/night, `cover` CLR/FEW/SCT/BKN/OVC, `precip` none/rain/snow/storm, `cat` VFR/MVFR/IFR/LIFR. |
 
 In OBS: **Sources → + → Browser**, paste the URL, width 1920, height 1080.
+
+## Sound
+
+The board plays a split-flap clack when it changes. In OBS, tick **Control audio via OBS** on the
+Browser Source so it appears in the Audio Mixer (turn it down or mute it there). A normal browser
+tab blocks sound until the page is clicked, so it shows a "Click to enable flap sound" button;
+OBS doesn't need it.
 
 ## Logo
 
@@ -48,7 +53,7 @@ version), and `VATSSA.png`, the roundel from VATSSA's own site
 ## Hosted (Netlify)
 
 Live at **https://twr.jonathanpeel.co.za** — use e.g.
-`https://twr.jonathanpeel.co.za/?callsign=FAOR_TWR&sound=1` as the OBS Browser Source, no local
+`https://twr.jonathanpeel.co.za/?callsign=FAOR_TWR` as the OBS Browser Source, no local
 server needed. Every push to `main` builds and deploys automatically.
 
 - `netlify.toml`: build command `npm run build:site` (bundles the client and assembles `site/`)

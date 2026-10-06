@@ -7,8 +7,8 @@ export function renderSetup(root: HTMLElement) {
   const airport = h('input', { name: 'airport', placeholder: 'from callsign', maxlength: '4', autocomplete: 'off', spellcheck: 'false' });
   const url = h('input', { readonly: '', class: 'url' });
   const copy = h('button', { type: 'button' }, 'Copy');
-  const preview = h('a', { target: '_blank' }, 'Open preview ↗');
-  const result = h('div.result', {}, h('label', {}, 'OBS Browser Source URL', h('div.url-row', {}, url, copy)), preview);
+  const open = h('a', { target: '_blank' }, 'Open overlay ↗');
+  const result = h('div.result', {}, h('label', {}, 'OBS Browser Source URL', h('div.url-row', {}, url, copy)), open);
   result.hidden = true;
 
   const form = h(
@@ -20,7 +20,7 @@ export function renderSetup(root: HTMLElement) {
     h('label', {}, 'Airport ICAO (optional override)', airport),
     h('button', { type: 'submit' }, 'Create overlay URL'),
     result,
-    h('p.hint', 'In OBS: Sources → + → Browser. Paste the URL, set width 1920 and height 1080.'),
+    h('p.hint', 'In OBS: Sources → + → Browser. Paste the URL, set width 1920 and height 1080, and tick “Control audio via OBS” so the board’s flap sound goes to the mixer (mute it there if you don’t want it).'),
   );
 
   form.addEventListener('submit', (e) => {
@@ -28,7 +28,7 @@ export function renderSetup(root: HTMLElement) {
     const q = new URLSearchParams({ callsign: callsign.value.trim().toUpperCase() });
     if (airport.value.trim()) q.set('airport', airport.value.trim().toUpperCase());
     url.value = `${location.origin}/?${q}`;
-    preview.href = `${url.value}&preview=1`;
+    open.href = url.value;
     result.hidden = false;
   });
   copy.addEventListener('click', async () => {

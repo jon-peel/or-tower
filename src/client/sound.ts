@@ -1,7 +1,7 @@
 // Split-flap "clack", synthesised with Web Audio (no audio files): a few ms of noise through a
 // band-pass filter with a fast decay, slightly varied each time so a rattle doesn't sound robotic.
-// Off unless the overlay URL has ?sound=1. In OBS, tick "Control audio via OBS" on the Browser
-// Source to route it to the stream mixer.
+// Always on. In OBS, tick "Control audio via OBS" on the Browser Source to route it to the
+// stream mixer, where it can be turned down or muted.
 
 const MIN_GAP_MS = 14; // cap: a full-board update becomes a rattle, not a wall of noise
 

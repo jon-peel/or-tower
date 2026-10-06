@@ -5,6 +5,7 @@ import { createClacker } from './sound.ts';
 import { createFlapRow, setFlapSound, type FlapRow } from './splitflap.ts';
 
 const POLL_MS = 15_000;
+const SOUND_VOLUME = 0.4; // always on; adjust or mute per source in OBS's audio mixer
 const STALE_POLL_MS = 60_000; // server unreachable this long → "data delayed"
 const STALE_FEED_MS = 120_000; // VATSIM feed timestamp older than this → "data delayed"
 const ROWS = 3;
@@ -16,12 +17,11 @@ export function startOverlay(root: HTMLElement, q: URLSearchParams) {
   const callsign = q.get('callsign')!;
   const airport = q.get('airport');
   document.documentElement.classList.add('is-overlay');
-  if (q.has('preview')) document.documentElement.classList.add('is-preview');
   const skyOverride = readSkyOverride(q);
 
   const ui = buildDom();
   root.append(ui.error, ui.bar);
-  if (q.get('sound') === '1') enableSound(root, ui, Number(q.get('volume') ?? 0.4));
+  enableSound(root, ui);
 
   let data: OverlayPayload | undefined;
   let lastOkAt = Date.now();
@@ -232,8 +232,8 @@ function zulu(ms: number): string {
  * Flap sound. OBS plays audio straight away; a normal browser tab blocks it until the page is
  * clicked, so there we show a hint, and the click unlocks audio and replays the board.
  */
-function enableSound(root: HTMLElement, ui: Ui, volume: number) {
-  const clacker = createClacker(Math.min(1, Math.max(0, volume || 0.4)));
+function enableSound(root: HTMLElement, ui: Ui) {
+  const clacker = createClacker(SOUND_VOLUME);
   setFlapSound(clacker.click);
 
   // Audio can take a moment to start even when allowed, so only ask for a click if it is
