@@ -1,5 +1,6 @@
 import type { Flight, FlightCategory, OverlayPayload } from '../shared/types.ts';
 import { h } from './dom.ts';
+import { createEtaTracker } from './eta.ts';
 import { createSky, type SkyState } from './sky.ts';
 import { createClacker } from './sound.ts';
 import { createFlapRow, setFlapSound, type FlapRow } from './splitflap.ts';
@@ -75,6 +76,7 @@ function buildDom() {
     arr: Array.from({ length: ROWS }, createBoardRow),
     error: h('div.error', ''),
     sky: createSky(),
+    etas: createEtaTracker(),
     stale: Object.assign(h('span.tab-stale', 'Data delayed'), { hidden: true }),
     event: Object.assign(h('div.lt-event'), { hidden: true }),
     bar: h('div.lt'),
@@ -145,7 +147,8 @@ function render(ui: Ui, d: OverlayPayload, { category: catOverride, ...skyOverri
   renderEvent(ui.event, d.event);
 
   fillBoard(ui.dep, d.departures, departureStatus);
-  fillBoard(ui.arr, d.arrivals, arrivalStatus);
+  const etas = ui.etas.update(d.arrivals, Date.now());
+  fillBoard(ui.arr, d.arrivals, (f) => arrivalStatus(f, etas.get(f.callsign)));
   renderClock(ui, d);
 }
 
@@ -195,10 +198,11 @@ function departureStatus(f: Flight): [string, string] {
   }
 }
 
-function arrivalStatus(f: Flight): [string, string] {
+/** `eta`: the steadied arrival time from the ETA tracker (epoch ms). */
+function arrivalStatus(f: Flight, eta: number | undefined): [string, string] {
   if (f.status === 'LANDED') return ['LANDED', 'dim'];
   if (f.status === 'APPROACH') return ['APPROACH', 'go'];
-  return [`ETA ${zulu(Date.now() + (f.etaMin ?? 0) * 60_000)}`, 'hold'];
+  return [`ETA ${zulu(eta ?? Date.now() + (f.etaMin ?? 0) * 60_000)}`, 'hold'];
 }
 
 /**
